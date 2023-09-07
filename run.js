@@ -2,6 +2,7 @@ import fetch from "node-fetch";
 import chalk from "chalk";
 import readlineSync from "readline-sync";
 import { v4 as uuidv4 } from "uuid";
+import inquirer from "inquirer";
 
 const getOtpRequest = (inputNomer, xPlayer) => new Promise((resolve, reject) => {
     const dataString = `{"phone":"${inputNomer}"}`
@@ -67,35 +68,52 @@ const getRegisterAcc = (maskingNumber, inputPIN, inputNomer, sendBy, inputOtp, x
 });
 
 (async () => {
-    //!generate Xplayer
-    const xPlayer = uuidv4();
-    //!Input User
-    const inputNomer = readlineSync.question(`[?] Masukkan Nomer Kamu : `)
-    const resultOtpRequest = await getOtpRequest(inputNomer, xPlayer);
-    const getData = resultOtpRequest.data;
-    const message = resultOtpRequest.code_message;
-    const maskingNumber = getData.masking_number;
-    const sendBy = getData.send_by;
-    const statusOtp = `Otp ${chalk.green(message)} send by ${chalk.green(sendBy)} with number ${chalk.green(maskingNumber)}`
-    if (resultOtpRequest.code === 200) {
-        console.log(`[!] ${statusOtp}`)
-        const inputOtp = readlineSync.question(`[?] Masukkan kode OTP : `)
-        const validateOtp = await getValidateOtp(inputNomer, inputOtp, xPlayer)
-        const status = validateOtp.code_message;
-        if (validateOtp.code === 200) {
-            console.log(`[!] ${chalk.green(status)}.. Buat PIN Kamu`);
-            const inputPIN = readlineSync.question(`[?] Masukkan PIN Kamu : `)
-            const resultRegisterAcc = getRegisterAcc(maskingNumber, inputPIN, inputNomer, sendBy, inputOtp, xPlayer)
-            const statusRegister = resultRegisterAcc.code_message;
-            if (resultRegisterAcc.code === 200) {
-                console.log(`[!] ${chalk.green(statusRegister)}! ${chalk.green(`Register Succesfully`)}`)
+    const answer = await inquirer.prompt([
+        {
+            type: 'list',
+            name: 'selectedOption',
+            message: 'Pilih salah satu opsi:',
+            choices: [
+                'Register Account Paxel',
+                'Login Account Paxel',
+            ]
+        }
+    ]);
+
+    if (answer.selectedOption === 'Register Account Paxel') {
+        //!generate Xplayer
+        const xPlayer = uuidv4();
+        //!Input User
+        const inputNomer = readlineSync.question(`[?] Masukkan Nomer Kamu : `)
+        const resultOtpRequest = await getOtpRequest(inputNomer, xPlayer);
+        const getData = resultOtpRequest.data;
+        const message = resultOtpRequest.code_message;
+        const maskingNumber = getData.masking_number;
+        const sendBy = getData.send_by;
+        const statusOtp = `Otp ${chalk.green(message)} send by ${chalk.green(sendBy)} with number ${chalk.green(maskingNumber)}`
+        if (resultOtpRequest.code === 200) {
+            console.log(`[!] ${statusOtp}`)
+            const inputOtp = readlineSync.question(`[?] Masukkan kode OTP : `)
+            const validateOtp = await getValidateOtp(inputNomer, inputOtp, xPlayer)
+            const status = validateOtp.code_message;
+            if (validateOtp.code === 200) {
+                console.log(`[!] ${chalk.green(status)}.. Buat PIN Kamu`);
+                const inputPIN = readlineSync.question(`[?] Masukkan PIN Kamu : `)
+                const resultRegisterAcc = getRegisterAcc(maskingNumber, inputPIN, inputNomer, sendBy, inputOtp, xPlayer)
+                const statusRegister = resultRegisterAcc.code_message;
+                if (resultRegisterAcc.code === 200) {
+                    console.log(`[!] ${chalk.green(statusRegister)}! ${chalk.green(`Register Succesfully`)}`)
+                } else {
+                    console.log(`[!] ${chalk.red(`Register Gagal!`)}`)
+                }
             } else {
-                console.log(`[!] ${chalk.red(`Register Gagal!`)}`)
+                console.log(`[!] ${chalk.red(`Gagal Menginputkan PIN!`)}`)
             }
         } else {
-            console.log(`[!] ${chalk.red(`Gagal Menginputkan PIN!`)}`)
+            console.log(`[!] ${chalk.red(`Gagal mengirim OTP!`)}`)
         }
-    } else {
-        console.log(`[!] ${chalk.red(`Gagal mengirim OTP!`)}`)
+    } else if (answer.selectedOption === 'Login Account Paxel') {
+
     }
+
 })();
